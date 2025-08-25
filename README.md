@@ -2,6 +2,8 @@
 
 A minimal R wrapper for using ChatDMDI in RStudio, based on the [ellmer](https://github.com/tidyverse/ellmer/) package.
 
+
+
 ## Installation
 
 Install from GitHub:
@@ -17,17 +19,18 @@ devtools::install_github("Jacobzwj/chatdmdi")
 You can choose one of the following model names for the `model` parameter:
 
 - gpt-4o-image-vip
-- gpt-4.1
-- claude-3-7-sonnet-20250219
 - o1
+- gpt-4.1
+- gpt-4o
+- gpt-4o-mini
+- claude-3-7-sonnet-20250219
+- claude-3-5-haiku-20241022
 - grok-3
 - grok-3-reason
-- claude-3-5-haiku-20241022
 - deepseek-r1
 - deepseek-v3
 - gemini-2.0-flash
-- gpt-4o-mini
-- gpt-4o
+
 
 ## Usage
 
