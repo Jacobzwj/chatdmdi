@@ -1,0 +1,7 @@
+export(chatdmdi)
+import(ellmer)
+importFrom(callr,r_bg)
+importFrom(rstudioapi,viewer)
+importFrom(rstudioapi,isAvailable)
+importFrom(utils,browseURL)
+

@@ -1,0 +1,19 @@
+Package: chatdmdi
+Type: Package
+Title: Minimal ChatDMDI Launcher via ellmer
+Version: 0.1.0
+Authors@R: person("Jacob", "Z", role = c("aut", "cre"))
+Description: A minimalist wrapper to launch an ellmer live browser chat
+    against the ChatDMDI-compatible API. Starts a background process and
+    opens the viewer.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Imports:
+    ellmer,
+    callr,
+    rstudioapi,
+    utils
+URL: https://github.com/Jacobzwj/chatdmdi
+BugReports: https://github.com/Jacobzwj/chatdmdi/issues
+Roxygen: list(markdown = TRUE)
+
