@@ -13,6 +13,18 @@
   invisible(bg)
 }
 
+.chatdmdi_get_cfg <- function() {
+  if (!exists("cfg", envir = .chatdmdi_env, inherits = FALSE)) {
+    assign("cfg", NULL, envir = .chatdmdi_env)
+  }
+  get("cfg", envir = .chatdmdi_env, inherits = FALSE)
+}
+
+.chatdmdi_set_cfg <- function(model, base_url, port) {
+  assign("cfg", list(model = model, base_url = base_url, port = port), envir = .chatdmdi_env)
+  invisible(TRUE)
+}
+
 .chatdmdi_kill_bg_if_alive <- function(timeout_ms = 3000) {
   bg <- .chatdmdi_get_bg()
   if (!is.null(bg)) {
@@ -23,6 +35,7 @@
     }
   }
   .chatdmdi_set_bg(NULL)
+  assign("cfg", NULL, envir = .chatdmdi_env)
 }
 
 .onUnload <- function(libpath) {
