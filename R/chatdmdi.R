@@ -19,6 +19,11 @@ chatdmdi <- function(model,
                      base_url = "https://chatdmdi.com.cuhk.edu.hk/v1",
                      port = 8765,
                      open_in_viewer = interactive()) {
+  # stop prior background process if alive, to ensure a clean restart
+  if (exists(".chatdmdi_kill_bg_if_alive", mode = "function")) {
+    .chatdmdi_kill_bg_if_alive()
+  }
+
   bg <- callr::r_bg(
     function(model, api_key, base_url, port) {
       library(ellmer)
@@ -32,6 +37,11 @@ chatdmdi <- function(model,
     },
     args = list(model = model, api_key = api_key, base_url = base_url, port = port)
   )
+
+  # save handle for future cleanup
+  if (exists(".chatdmdi_set_bg", mode = "function")) {
+    .chatdmdi_set_bg(bg)
+  }
 
   if (isTRUE(open_in_viewer)) {
     url <- sprintf("http://127.0.0.1:%s", port)
