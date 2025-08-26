@@ -7,9 +7,7 @@
 #' @param port Integer scalar; Shiny port to serve the live browser. Defaults to 8765.
 #' @param open_in_viewer Logical; open the viewer automatically (RStudio viewer if
 #'   available, otherwise system browser). Defaults to interactive().
-#' @param force_open Logical; when a session with the same configuration is already
-#'   running, open another Viewer window anyway. Defaults to FALSE to avoid
-#'   creating a second Shiny session (which can show different UI history).
+#' @param force_open Logical; reserved for future use.
 #'
 #' @return Invisibly returns the background process handle.
 #' @export
@@ -33,18 +31,13 @@ chatdmdi <- function(model,
       isTRUE(cfg_prev$base_url == base_url) &&
       isTRUE(as.integer(cfg_prev$port) == as.integer(port))
     if (same_cfg && !is.null(bg_prev) && is.function(bg_prev$is_alive) && isTRUE(bg_prev$is_alive())) {
-      if (isTRUE(open_in_viewer) && isTRUE(force_open)) {
+      if (isTRUE(open_in_viewer)) {
         url <- sprintf("http://127.0.0.1:%s", port)
         if (requireNamespace("rstudioapi", quietly = TRUE) && rstudioapi::isAvailable()) {
           rstudioapi::viewer(url)
         } else {
           utils::browseURL(url)
         }
-      } else if (isTRUE(open_in_viewer) && !isTRUE(force_open)) {
-        message(sprintf(
-          "ChatDMDI session already running at %s. Not opening a new Viewer to avoid duplicate sessions. Set force_open = TRUE if you still want to open another window.",
-          sprintf("http://127.0.0.1:%s", port)
-        ))
       }
       return(invisible(bg_prev))
     }
