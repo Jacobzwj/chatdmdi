@@ -70,7 +70,7 @@
 
 .onAttach <- function(libname, pkgname) {
   msg <- paste0(
-    "欢迎使用 ChatDMDI，详细用法请参考： https://github.com/Jacobzwj/chatdmdi"
+    "Welcome to ChatDMDI. For usage, see: https://github.com/Jacobzwj/chatdmdi"
   )
   packageStartupMessage(msg)
 }
