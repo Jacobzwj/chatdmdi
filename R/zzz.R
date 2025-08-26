@@ -75,22 +75,4 @@
   packageStartupMessage(msg)
 }
 
-# wait until localhost:port is accepting connections
-.chatdmdi_wait_until_listening <- function(port, timeout_ms = 5000L) {
-  started <- Sys.time()
-  repeat {
-    con <- try(socketConnection(host = "127.0.0.1", port = as.integer(port),
-                                open = "r+", blocking = TRUE, server = FALSE,
-                                timeout = 0.25), silent = TRUE)
-    if (!inherits(con, "try-error")) {
-      try(close(con), silent = TRUE)
-      return(TRUE)
-    }
-    if (as.numeric(difftime(Sys.time(), started, units = "secs")) * 1000 >= timeout_ms) {
-      return(FALSE)
-    }
-    Sys.sleep(0.15)
-  }
-}
-
 
