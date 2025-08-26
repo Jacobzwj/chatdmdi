@@ -34,22 +34,22 @@ chatdmdi <- function(model,
       isTRUE(cfg_prev$base_url == base_url) &&
       isTRUE(as.integer(cfg_prev$port) == as.integer(port))
     if (same_cfg && !is.null(bg_prev) && is.function(bg_prev$is_alive) && isTRUE(bg_prev$is_alive())) {
-      if (isTRUE(open_in_viewer)) {
-        url <- sprintf("http://127.0.0.1:%s", port)
-        if (isTRUE(force_open)) {
+      # same configuration already running
+      if (isTRUE(force_open)) {
+        # start a fresh session (history cleared)
+        if (exists(".chatdmdi_kill_bg_if_alive", mode = "function")) .chatdmdi_kill_bg_if_alive()
+      } else {
+        # reuse existing session: just (re)open viewer to show current history
+        if (isTRUE(open_in_viewer)) {
+          url <- sprintf("http://127.0.0.1:%s", port)
           if (requireNamespace("rstudioapi", quietly = TRUE) && rstudioapi::isAvailable()) {
             rstudioapi::viewer(url)
           } else {
             utils::browseURL(url)
           }
-        } else {
-          message(sprintf(
-            "ChatDMDI is already running at %s. To avoid parallel sessions, we did not open a new Viewer. Close the existing Viewer first or call with force_open = TRUE.",
-            url
-          ))
         }
+        return(invisible(bg_prev))
       }
-      return(invisible(bg_prev))
     }
     # different cfg or dead -> kill then restart
     if (exists(".chatdmdi_kill_bg_if_alive", mode = "function")) {
@@ -66,12 +66,11 @@ chatdmdi <- function(model,
         api_key = api_key,
         base_url = base_url
       )
-      # Keep the chat session persistent across Viewer closes by
-      # restarting the Shiny app whenever it stops.
-      repeat {
-        try(ellmer::live_browser(chat), silent = TRUE)
-        Sys.sleep(0.2)
-      }
+      # run a single live_browser; if user closes the Viewer, the background
+      # process stays alive and we can reopen the same session by calling viewer again
+      ellmer::live_browser(chat)
+      # keep process alive idling so that we can reopen the viewer later
+      while (TRUE) Sys.sleep(1)
     },
     args = list(model = model, api_key = api_key, base_url = base_url, port = port)
   )))
