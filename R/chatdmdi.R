@@ -29,6 +29,7 @@ chatdmdi <- function(model,
       exists(".chatdmdi_get_cfg", mode = "function")) {
     bg_prev <- .chatdmdi_get_bg()
     cfg_prev <- .chatdmdi_get_cfg()
+    state_path <- if (exists(".chatdmdi_get_state_path", mode = "function")) .chatdmdi_get_state_path() else NULL
     same_cfg <- !is.null(cfg_prev) &&
       isTRUE(cfg_prev$model == model) &&
       isTRUE(cfg_prev$base_url == base_url) &&
@@ -39,16 +40,33 @@ chatdmdi <- function(model,
         # start a fresh session (history cleared)
         if (exists(".chatdmdi_kill_bg_if_alive", mode = "function")) .chatdmdi_kill_bg_if_alive()
       } else {
-        # reuse existing session: just (re)open viewer to show current history
-        if (isTRUE(open_in_viewer)) {
-          url <- sprintf("http://127.0.0.1:%s", port)
-          if (requireNamespace("rstudioapi", quietly = TRUE) && rstudioapi::isAvailable()) {
-            rstudioapi::viewer(url)
-          } else {
-            utils::browseURL(url)
+        # decide based on viewer active state, if available
+        viewer_active <- FALSE
+        if (exists(".chatdmdi_is_active", mode = "function")) viewer_active <- .chatdmdi_is_active()
+        if (isTRUE(viewer_active)) {
+          # already showing: avoid parallel window
+          if (isTRUE(open_in_viewer)) {
+            message(sprintf(
+              "ChatDMDI is already running at %s. Close the existing Viewer first or call with force_open = TRUE to start a new session.",
+              sprintf("http://127.0.0.1:%s", port)
+            ))
           }
+          return(invisible(bg_prev))
+        } else {
+          # inactive: request reopen by signaling background and open viewer
+          if (!is.null(state_path)) {
+            try(writeLines("1", state_path), silent = TRUE)
+          }
+          if (isTRUE(open_in_viewer)) {
+            url <- sprintf("http://127.0.0.1:%s", port)
+            if (requireNamespace("rstudioapi", quietly = TRUE) && rstudioapi::isAvailable()) {
+              rstudioapi::viewer(url)
+            } else {
+              utils::browseURL(url)
+            }
+          }
+          return(invisible(bg_prev))
         }
-        return(invisible(bg_prev))
       }
     }
     # different cfg or dead -> kill then restart
@@ -57,8 +75,17 @@ chatdmdi <- function(model,
     }
   }
 
+  # create or reuse a state file to coordinate viewer open/close
+  state_path <- if (exists(".chatdmdi_get_state_path", mode = "function")) .chatdmdi_get_state_path() else NULL
+  if (is.null(state_path) || !file.exists(state_path)) {
+    state_path <- tempfile(pattern = sprintf("chatdmdi_%s_", port), fileext = ".state")
+  }
+  # request initial open
+  try(writeLines("1", state_path), silent = TRUE)
+  if (exists(".chatdmdi_set_state_path", mode = "function")) .chatdmdi_set_state_path(state_path)
+
   bg <- suppressMessages(suppressWarnings(callr::r_bg(
-    function(model, api_key, base_url, port) {
+    function(model, api_key, base_url, port, state_path) {
       library(ellmer)
       options(shiny.port = port)
       chat <- ellmer::chat_openai(
@@ -66,13 +93,21 @@ chatdmdi <- function(model,
         api_key = api_key,
         base_url = base_url
       )
-      # run a single live_browser; if user closes the Viewer, the background
-      # process stays alive and we can reopen the same session by calling viewer again
-      ellmer::live_browser(chat)
-      # keep process alive idling so that we can reopen the viewer later
-      while (TRUE) Sys.sleep(1)
+      # loop: when state file contains "1", open viewer; mark active/inactive
+      if (!file.exists(state_path)) writeLines("0", state_path)
+      repeat {
+        cmd <- tryCatch(readLines(state_path, warn = FALSE), error = function(e) "0")
+        cmd <- if (length(cmd) > 0) trimws(cmd[[1]]) else "0"
+        if (identical(cmd, "1")) {
+          # mark active, run viewer, then mark inactive
+          try(writeLines("1", state_path), silent = TRUE)
+          try(ellmer::live_browser(chat), silent = TRUE)
+          try(writeLines("0", state_path), silent = TRUE)
+        }
+        Sys.sleep(0.2)
+      }
     },
-    args = list(model = model, api_key = api_key, base_url = base_url, port = port)
+    args = list(model = model, api_key = api_key, base_url = base_url, port = port, state_path = state_path)
   )))
 
   # save handle and cfg for future reuse

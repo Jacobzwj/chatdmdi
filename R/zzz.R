@@ -25,6 +25,25 @@
   invisible(TRUE)
 }
 
+.chatdmdi_get_state_path <- function() {
+  if (!exists("state_path", envir = .chatdmdi_env, inherits = FALSE)) {
+    assign("state_path", NULL, envir = .chatdmdi_env)
+  }
+  get("state_path", envir = .chatdmdi_env, inherits = FALSE)
+}
+
+.chatdmdi_set_state_path <- function(path) {
+  assign("state_path", path, envir = .chatdmdi_env)
+  invisible(path)
+}
+
+.chatdmdi_is_active <- function() {
+  path <- .chatdmdi_get_state_path()
+  if (is.null(path) || !file.exists(path)) return(FALSE)
+  val <- tryCatch(readLines(path, warn = FALSE), error = function(e) "0")
+  length(val) > 0 && trimws(val[[1]]) == "1"
+}
+
 .chatdmdi_kill_bg_if_alive <- function(timeout_ms = 3000) {
   bg <- .chatdmdi_get_bg()
   if (!is.null(bg)) {
@@ -36,11 +55,24 @@
   }
   .chatdmdi_set_bg(NULL)
   assign("cfg", NULL, envir = .chatdmdi_env)
+  # cleanup state file
+  state_path <- .chatdmdi_get_state_path()
+  if (!is.null(state_path) && file.exists(state_path)) {
+    try(unlink(state_path, force = TRUE), silent = TRUE)
+  }
+  assign("state_path", NULL, envir = .chatdmdi_env)
 }
 
 .onUnload <- function(libpath) {
   # Best-effort cleanup on package unload
   .chatdmdi_kill_bg_if_alive()
+}
+
+.onAttach <- function(libname, pkgname) {
+  msg <- paste0(
+    "欢迎使用 ChatDMDI，详细用法请参考： https://github.com/Jacobzwj/chatdmdi"
+  )
+  packageStartupMessage(msg)
 }
 
 
