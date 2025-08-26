@@ -116,6 +116,10 @@ chatdmdi <- function(model,
 
   if (isTRUE(open_in_viewer)) {
     url <- sprintf("http://127.0.0.1:%s", port)
+    # wait briefly until shiny is listening to avoid blank viewer on first install
+    if (exists(".chatdmdi_wait_until_listening", mode = "function")) {
+      .chatdmdi_wait_until_listening(port)
+    }
     if (requireNamespace("rstudioapi", quietly = TRUE) && rstudioapi::isAvailable()) {
       rstudioapi::viewer(url)
     } else {
