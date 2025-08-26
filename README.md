@@ -47,6 +47,11 @@ chatdmdi(
 By default the function starts a background process and opens the UI at
 http://127.0.0.1:8765. If you're in RStudio, it opens in the Viewer pane.
 
+### Session behavior
+
+- restart viewer: close the Viewer and call `chatdmdi()` again with the same model to reopen the existing session and preserve messages.
+- change model: change the model name and call `chatdmdi()` to start a new session with the new model; previous history is cleared.
+
 ## References
 
 - ellmer: https://github.com/tidyverse/ellmer/
