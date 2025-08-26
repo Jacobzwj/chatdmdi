@@ -75,39 +75,23 @@ chatdmdi <- function(model,
     }
   }
 
-  # create or reuse a state file to coordinate viewer open/close
-  state_path <- if (exists(".chatdmdi_get_state_path", mode = "function")) .chatdmdi_get_state_path() else NULL
-  if (is.null(state_path) || !file.exists(state_path)) {
-    state_path <- tempfile(pattern = sprintf("chatdmdi_%s_", port), fileext = ".state")
-  }
-  # request initial open
-  try(writeLines("1", state_path), silent = TRUE)
-  if (exists(".chatdmdi_set_state_path", mode = "function")) .chatdmdi_set_state_path(state_path)
-
   bg <- suppressMessages(suppressWarnings(callr::r_bg(
-    function(model, api_key, base_url, port, state_path) {
+    function(model, api_key, base_url, port) {
       library(ellmer)
-      options(shiny.port = port)
+      # ensure server starts without trying to launch a browser in the bg process
+      options(shiny.port = port, shiny.launch.browser = FALSE)
       chat <- ellmer::chat_openai(
         model = model,
         api_key = api_key,
         base_url = base_url
       )
-      # loop: when state file contains "1", open viewer; mark active/inactive
-      if (!file.exists(state_path)) writeLines("0", state_path)
+      # run the UI server repeatedly; when a viewer closes, loop restarts
       repeat {
-        cmd <- tryCatch(readLines(state_path, warn = FALSE), error = function(e) "0")
-        cmd <- if (length(cmd) > 0) trimws(cmd[[1]]) else "0"
-        if (identical(cmd, "1")) {
-          # mark active, run viewer, then mark inactive
-          try(writeLines("1", state_path), silent = TRUE)
-          try(ellmer::live_browser(chat), silent = TRUE)
-          try(writeLines("0", state_path), silent = TRUE)
-        }
+        try(ellmer::live_browser(chat), silent = TRUE)
         Sys.sleep(0.2)
       }
     },
-    args = list(model = model, api_key = api_key, base_url = base_url, port = port, state_path = state_path)
+    args = list(model = model, api_key = api_key, base_url = base_url, port = port)
   )))
 
   # save handle and cfg for future reuse
