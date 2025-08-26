@@ -54,7 +54,12 @@ chatdmdi <- function(model,
         api_key = api_key,
         base_url = base_url
       )
-      ellmer::live_browser(chat)
+      # Keep the chat session persistent across Viewer closes by
+      # restarting the Shiny app whenever it stops.
+      repeat {
+        try(ellmer::live_browser(chat), silent = TRUE)
+        Sys.sleep(0.2)
+      }
     },
     args = list(model = model, api_key = api_key, base_url = base_url, port = port)
   )))
